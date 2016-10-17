@@ -1,3 +1,10 @@
+pycmail (0.1.6) unstable; urgency=high
+
+  * increase debhelper compat version (closes: #817636)
+  * update URLs and addresses in the documentation
+
+ -- Radovan Garabík <garabik@kassiopeia.juls.savba.sk>  Mon, 17 Oct 2016 16:20:41 +0200
+
 pycmail (0.1.5) unstable; urgency=low
 
   * add simple logging
