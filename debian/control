@@ -7,7 +7,7 @@ Standards-Version: 3.9.6
 
 Package: pycmail
 Architecture: all
-Depends: python
+Depends: ${misc:Depends}, python
 Recommends: procmail
 Description: mail sorter written in Python
  mail sorter similar to procmail, written in Python, using Python
