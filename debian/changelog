@@ -1,0 +1,113 @@
+pycmail (0.1.5) unstable; urgency=low
+
+  * add simple logging
+  * add setting envelope sender address (both thanks to Luar Roji)
+
+ -- Radovan Garabík <garabik@kassiopeia.juls.savba.sk>  Mon, 05 Jul 2010 15:21:23 +0200
+
+pycmail (0.1.4) unstable; urgency=low
+
+  * use class exception instead of a string one (thans to G. Milde)
+
+ -- Radovan Garabík <garabik@kassiopeia.juls.savba.sk>  Sat, 31 May 2008 17:25:28 +0200
+
+pycmail (0.1.3) unstable; urgency=low
+
+  * added -D option, to use arbitrary defines (thanks to William McVey)
+  * some minor tweaks
+  * fix manpage (closes: #269881)
+  * rename example so that they do not start with a dot (closes: #385689), thanks to
+    Andrei Popescu
+  * fix long overdue conflicting method and attribute name (thanks to David Handy)
+
+ -- Radovan Garabík <garabik@kassiopeia.juls.savba.sk>  Tue, 17 Oct 2006 16:56:21 +0200
+
+pycmail (0.1.2) unstable; urgency=low
+
+  * fixed bug when regular expressions ignored case sensitivity settings
+    (closes: #157051)
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Tue, 22 Oct 2002 19:57:46 +0200
+
+pycmail (0.1.1) unstable; urgency=low
+
+  * debian package dependencies modified for new python versioning scheme
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Sat,  3 Nov 2001 19:59:28 +0100
+
+pycmail (0.1) unstable; urgency=low
+
+  * introduced timeout for locking mailboxes
+  * use of --config or -c to change default configuration file
+  * can read messages from files, not only from stdin
+  * Reply() and SendMail() can fake Sender: header as well
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Sun,  7 May 2000 16:08:04 +0200
+
+pycmail (0.0.9) unstable; urgency=low
+
+  * fixed bug in calculating length of message
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Mon, 10 Apr 2000 16:44:57 +0200
+
+pycmail (0.0.8) unstable; urgency=low
+
+  * fixed bug when setting a default mailbox from /etc/pycmailrc
+  * separate testing mode (-t) and writing debug messages (-d)
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Sun,  2 Apr 2000 21:51:02 +0200
+
+pycmail (0.0.7) unstable; urgency=low
+
+  * updated examples to reflect changes in new versions
+  * little bug fixed: test for an already existing file when delivering
+    to maildir
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Tue, 14 Mar 2000 22:41:44 +0100
+
+pycmail (0.0.6) unstable; urgency=low
+
+  * support for test runs
+  * protect against errors in user recipes
+  * added Bounce() function
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Thu,  9 Mar 2000 11:44:18 +0100
+
+pycmail (0.0.5) unstable; urgency=low
+
+  * important bug fix: files were not closed properly
+  * deafult searching is now case insensitive for substrings,
+    case sensitive for regular expressions
+  * added SetDefault function
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Tue,  7 Mar 2000 10:55:09 +0100
+
+pycmail (0.0.4) unstable; urgency=low
+
+  * added Reply, SendMail functions
+  * more consistent capitalization in variables and functions
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Fri,  3 Mar 2000 14:23:55 +0100
+
+pycmail (0.0.3) unstable; urgency=low
+
+  * fixed bug in handling regular expressions
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Thu,  2 Mar 2000 17:21:18 +0100
+
+pycmail (0.0.2) unstable; urgency=low
+
+  * Set, Append functions added
+  * changes regarding reading the messgae
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Wed,  1 Mar 2000 15:55:19 +0100
+
+pycmail (0.0.1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>  Tue, 29 Feb 2000 12:48:21 +0100
+
+Local variables:
+mode: debian-changelog
+End:

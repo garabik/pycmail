@@ -1,0 +1,141 @@
+This README is for you if you already speak python. If not, 
+look at README.nopython
+
+This text is very brief and not yet finished. The best bet would be 
+to look at the source code :-)
+
+.pycmailrc is execfile'd during the execution of pycmail.py.
+It is a regular python program, so you have all the power of python at your
+disposition.
+Following variables are predefined:
+
+FROM - string taken from From: header, with leading and trailing 
+       whitespace stripped
+TO - string taken from TO: header, with leading and trailing 
+     whitespace stripped
+CC - string taken from Cc: header, with leading and trailing 
+     whitespace stripped
+SUBJECT - string taken from Subject: header, with leading and 
+          trailing whitespace stripped
+ADDR_FROM - tuple of (name, address) taken from From: header
+            e.g. if the header has form 
+            From: Guido van Rossum <guido@python.org>,
+            ADDR_FROM would be ('Guido van Rossum', 'guido@python.org')
+ADDR_TO - tuple of (name, address) taken from To: header
+          if there are more To: addresses, only the first is taken.
+ADDR_CC - tuple of (name, address) taken from Cc: header 
+          if there are more Cc: addresses, only the first is taken.
+NAMELIST_TO - list of names found in To: header
+ADDRLIST_TO - list of addresses found in To: header
+NAMELIST_CC - list of names found in Cc: header
+ADDRLIST_CC - list of addresses found in Cc: header
+BODY - string containing message body (or the beginning of it, if the 
+       message is long)
+
+msg - string containing the message, including headers and body (or 
+      just the beginning, if the message is too long)
+mailmsg - instance of rfc822 object, containing the message. Refer 
+          to rfc822 module documentation for more info
+
+USERNAME - name of user
+USERHOME - $HOME of user
+
+DEBUGLEVEL - debugging level (specified by -d switch)
+
+Following functions are predefined, you can use them in .pycmailrc file
+
+def Contains(sub, s, case=1, rex=0, flags=None): return true if string 
+s is in string sub
+if rex=1, do regular expression maching, else just look for substring.
+if case=0, be case insensitive, else be case sensitive (default 0 for 
+substrings, 1 for regular expressions)
+flags are flags for regular expression.
+example:
+if Contains(FROM, "spammer.*?@yahoo.com", case=0, rex=1, flags=re.S):
+    some action
+
+def InHeader(hname, sub, case=1, rex=0, flags=None): return true if 
+                                    sub is in header with name hname
+it is a shorthand for Contains(mailmsg.getheader(hname), sub, case, rex, flags)
+example:
+if InHeader("X-Mailing-list", "debian-devel"):
+    some action
+
+def Stop(): stops processing .pycmailrc. Alternative to using
+if ... elif... elif... elif... else
+
+
+Your .pycmailrc should set up DESTINATION list. It is a list of
+destinations your mail would be delivered into. It can contain only one
+destination (typically a mailbox), but it still has to be a list. If your
+.pycmailrc leaves it to be an empty list, the default destination (usually
+/var/spool/mail/username) is used. 
+
+Valid destinations are:
+
+DevNull()
+  no comment
+
+Pipe("name")
+  os.popen program "name" and pass the message (with full headers) to it as stdin.
+  if "name" prints anything to stdout, it is taken as error in mail delivery - 
+  use Pipe("name >/dev/null 2>&1") if it is undesirable.
+
+Forward("name@computer")
+  forward mail to name@computer
+
+Forward("name@computer", "return@path")
+  forward mail to name@computer, call sendmail with -f return@path
+  use to set return path when MTA happens to reset it:
+  Append(Forward("me@addr", mailmsg.getaddr('Reply-To:')[1] or ADDR_FROM[1]))
+  
+MailDir("directory")
+  deliver mail to "directory", in maildir format
+
+MailBox("mailbox")
+  deliver mail to "mailbox" in BSD mailbox format
+
+
+You can use following functions:
+
+Append(dest)
+this appends destination dest to existing DESTINATION
+
+Set(dest)
+this sets DESTINATION = [dest]
+
+Both Append() and Set() support multiple arguments: Append(dest1, dest2, dest3)
+
+Junk()
+is equivalent to DESTINATION = [DevNull()]
+
+SetDefault()
+sets default destination (usually /var/spool/mail/username)
+It is automatically set before processing .pycmailrc
+
+
+SendMail(recipient, From="from@mail.address",
+         sender="sender@mail.address", subject="subject", text="pycmail test mail"):
+send a mail to recipient, if From is specified, the mail will look like 
+it was sent from From address. (It is not intended for faking mails, but as
+an effective countermeasure against spam - MTA usually places your true 
+identity in headers anyway). Ok, there are situations where you might want
+to modify the headers so that you true identity is concealed. In that case, use
+sender="address" to modify Sender: header. You probably must be in "trusted users" group 
+to be able to do this, it depends on your MTA (this is how it is in exim). 
+
+Reply(recipient="where@to.reply", From="from@mail.address", 
+      sender="who@sent.it", subject="subject", text="pycmail test reply"):
+reply to the current mail. Unless you specify explicitly recipient, the 
+return address is taken from Reply-To: header, if it does not exist, from From: 
+header.
+If not specified, subject is "Re: "+ original subject
+
+Bounce(text):
+prints text to stdout, which will cause the MTA to bounce the message
+
+Debug(text, level=2):
+if debuglevel is equal or greater than level, print text.
+Usually, when receiving mail, this means the mail will bounce with 
+error described by text.
+

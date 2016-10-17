@@ -1,0 +1,72 @@
+#!/usr/bin/python
+
+# simple example to show how to detect duplicate mails
+# based on contribution by Samuel Krempp
+
+import md5, cPickle
+
+md = USERHOME+"/Mail/"
+
+
+class MsgCache:
+    def __init__(self, entries = 5):
+        self.data = entries*[0]
+        self.position = 0
+        self.entries = entries
+
+    def add(self, value):
+        self.data[self.position] = value
+        self.position = self.position+1
+        if self.position >= self.entries:
+            self.position = 0
+
+    def resize(self, newentries):
+        if newentries == self.entries:
+            return
+        if newentries < self.entries:
+            self.data = self.data[:newentries]  # fixme
+            if self.position >= newentries:
+                self.position = newentries-1
+        else:
+            self.data = self.data + (newentries-self.entries)*[0]
+        self.entries = newentries
+
+
+
+def Duplicate(hashfile="~/Mail/.msgid_cache", entries=5):
+    "test for duplicate mails"
+
+    hashfile = os.path.expanduser(hashfile)
+    dotlock(hashfile, retries=6, locktimeout=10) # wait up to 1 minute before forcing lock
+    if os.path.isfile(md+".msgid_cache"):
+        try:
+            fd=open(hashfile, "r")
+            msgcache=cPickle.load(fd)
+            fd.close()
+        except:  # something wrong - probably corrupt cache file
+            msgcache=MsgCache()
+        msgcache.resize(newentries=entries)
+    else:
+        msgcache = MsgCache()
+
+    msg_hash=mailmsg.getheader("Message-ID") or ""
+    msg_hash=msg_hash + FROM + TO
+    msg_hash=md5.new(msg_hash).digest()
+
+    if msg_hash in msgcache.data:
+        Debug("Duplicate found", 2)
+        Junk()
+        dotunlock(hashfile)
+        return 1
+    else:
+        msgcache.add(msg_hash)
+        fd=open(hashfile, "w")
+        cPickle.dump(msgcache, fd)
+        fd.close()
+        dotunlock(hashfile)
+        return 0
+
+
+if Duplicate():
+    Debug("Duplicate found", 2)
+    Junk()

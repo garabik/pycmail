@@ -1,0 +1,24 @@
+#############################
+# this file belongs to /etc #
+#############################
+
+# default mailbox mail is going to
+defaultbox = "/var/spool/mail/"+USERNAME
+
+# default destination of mail - do not change unless you have a reason
+# (such as using maildir instead of mailbox as defaul)
+default = MailBox(defaultbox)
+
+# how much bytes after headers to read
+bodysize = 1000
+
+# size of chunks used to write message to the mail folder. 
+# better make it multiplication of filesystem block size for best performance
+bufsize = 4096
+
+# location of sendmail program
+sendmailbin = "/usr/sbin/sendmail"
+
+# location of lockfile program
+lockfilebin = "/usr/bin/lockfile"
+

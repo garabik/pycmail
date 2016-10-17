@@ -1,0 +1,177 @@
+This README is for you if you do not speak python. If you do, look at
+README.python
+
+This text is very brief and not yet finished. The best bet would be 
+to look at examples/ and start modifying those examples.
+
+Read something about python syntax. Good URL is 
+http://www.idi.ntnu.no/~mlh/python/instant.html
+
+
+The best way to set up a .pycmailrc file is to use following conditions:
+
+if condition:
+    Set(mail_destination(parameter))
+    Stop()
+
+if condition2:
+    Set(mail_destination2(parameter))
+    Stop()
+
+....
+
+Set sets the mail destination. You can use Append instead Set, in this case the
+destination is appended to already existing one.
+
+notice the identation - it is important, and it separates body of the if
+condition (so there are no curly brackets or anything else).
+All variables and keywords are case sensitive.
+
+The colon : after the condition is compulsory.
+
+mail_destination can be one of following:
+
+DevNull()
+  no comment
+
+Pipe("name")
+  execute program "name" and pass the message (with full headers) to it 
+  as stdin. if the program prints anything to stdout, it is taken as 
+  error in mail delivery - use Pipe("name >/dev/null 2>&1") if it 
+  is undesirable.
+
+Forward("name@computer")
+  forward mail to name@computer
+
+MailDir("directory")
+  deliver mail to "directory", in maildir format
+
+MailBox("mailbox")
+  deliver mail to "mailbox" in BSD mailbox format
+
+
+you can deliver mail to more destinations, separate them with comma ,
+
+e.g.
+
+if InHeader("X-Mailing-list", "debian-devel"):
+    Set(
+        MailBox("/home/username/debian-devel"), 
+        Forward("krivanek@dmpc.dbp.fmph.uniba.sk")
+        )
+    Stop()
+
+
+You can use following conditions:
+
+Contains(s, sub): return true if string sub is in string s (using
+  substrings, not regular expressions)
+
+Contains(s, sub, case=0) - the same, but case insensitive
+
+Contains(s, sub, rex=1) - the same, but using regular expressions
+
+example:
+
+if Contains(FROM, "spammer@yahoo.com", case=0):
+    Junk()
+    Stop()
+
+Junk() is the same as Set(DevNull())
+
+InHeader(hname, sub): return true if sub is in header with name hname
+InHeader(hname, sub, case=1): case sensitive version
+
+example:
+
+if InHeader("X-Mailing-list", "debian-devel"):
+    Set(MailBox("/home/username/debian-devel"))
+    Stop()
+
+Following strings are defined:
+
+FROM - string taken from From: header, with leading and trailing whitespace stripped
+TO - string taken from TO: header, with leading and trailing whitespace stripped
+CC - string taken from Cc: header, with leading and trailing whitespace stripped
+SUBJECT - string taken from Subject: header, with leading and trailing whitespace stripped
+ADDR_FROM[0] - name taken from From: header
+ADDR_FROM[1] - mail address taken from From: header
+            e.g. if the header has form From: Guido van Rossum <guido@python.org>,
+            ADDR_FROM[0] would be "Guido van Rossum"
+            ADDR_FROM[1] would be "guido@python.org"
+ADDR_TO[0] - name taken from To: header
+ADDR_TO[1] - mail address taken from To: header
+ADDR_CC[0] - name taken from Cc: header
+ADDR_CC[1] - mail address taken from Cc: header
+BODY - string containing message body (or the beginning of it, if the message is long)
+
+msg - string containing the message, including headers (or just the beginning, 
+      if the message is too long)
+
+
+Following lists are defined: (never mind if you do not know what a list is :-))
+
+NAMELIST_TO - list of names found in To: header
+ADDRLIST_TO - list of addresses found in To: header
+NAMELIST_CC - list of names found in Cc: header
+ADDRLIST_CC - list of addresses found in Cc: header
+
+
+You can test if name is in the list with following condition:
+
+if "bablo@view.net.au" in ADDRLIST_TO:
+    # mailing list - move it to apropriate mailbox
+    Set(MailBox("/home/username/bablo"))
+    Stop()
+
+if "Bill Clinton" in NAMELIST_CC:
+    # this mail was sent to me and copy went to 
+    # Bill Clinton - it has to be something special :-)
+    Append(MailBox("/home/username/specialbox"))
+    Stop()
+
+
+You can execute external programs either with Pipe destination, or, if you do not
+want to pass the whole mail message to the program, with os.system.
+example:
+
+if Contains(SUBJECT, "seti") and ADDR_FROM[1] == "root@localhost":
+    os.system("killall setiathome")
+
+When the program writes anything to the output, it is taken as an error
+and mail will bounce.
+
+This is an example how to prevent it:
+if Contains(SUBJECT, "seti") and ADDR_FROM[1] == "root@localhost":
+    os.system("killall setiathome >/dev/null 2>&1")
+
+
+Following functions are defined:
+
+SendMail(recipient, From="from@mail.address",
+         sender="sender@mail.address", subject="subject", text="pycmail test mail"):
+send a mail to recipient, if From is specified, the mail will look like 
+it was sent from From address. (It is not intended for faking mails, but as
+an effective countermeasure against spam - MTA usually places your true 
+identity in headers anyway). Ok, there are situations where you might want
+to modify the headers so that you true identity is concealed. In that case, use
+sender="address" to modify Sender: header. You probably must be in "trusted users" group 
+to be able to do this, it depends on your MTA (this is how it is in exim). 
+
+Reply(recipient="where@to.reply", From="from@mail.address", 
+      sender="who@sent.it", subject="subject", text="pycmail test reply"):
+reply to the current mail. Unless you specify explicitly recipient, the 
+return address is taken from Reply-To: header, if it does not exist, from From: 
+header.
+If not specified, subject is "Re: "+ original subject
+
+Bounce(text):
+prints text to stdout, which will cause the MTA to bounce the message
+
+
+Debug(text, level=2):
+if debuglevel is equal or greater than level, print text.
+Usually, when receiving mail, this means the mail will bounce with 
+error described by text.
+exmaple:
+Debug("I am inside a complicated if-then structure", 2)

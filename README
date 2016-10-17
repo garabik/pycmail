@@ -1,0 +1,103 @@
+Written by Radovan Garabík <garabik @ kassiopeia.juls.savba.sk>
+For new versions, look at http://melkor.dnp.fmph.uniba.sk/~garabik/pycmail.html
+
+
+WARNING: this program fiddles with your mail. You can lose your mail.
+         Locking of mailboxes has been notoriously known for not being 
+         twice reliable.
+         Especially for mailboxes on NFS.
+         You can use maildir instead, it does not have locking problems.
+         But you can lose your mail anyway.
+         On top of this, pycmail is in active development.
+         It can have bugs.
+         You have been warned.
+         Do not blame me if you lose your mail.
+
+
+A bit of terminology:
+MTA - mail transport agent. Sometimes called mail daemon, the program 
+responsible for sending, receiving and delivering mail.
+Some well-known MTAs are: sendmail, exim, qmail, postfix, smail, zmailer
+
+pycmail should be invoked automatically from the .forward file 
+when mail arrives. 
+
+put following into your .forward:
+
+|/usr/bin/pycmail
+
+
+When invoked, it reads the beginning of mail message from stdin, and then
+it executes a file named $HOME/.pycmailrc. This file is a regular python
+program, for further description see README.python if you can program in
+python, and README.nopython if you can't.
+
+According to the commands in this file, the mail message that just arrived
+gets distributed into the right folder, gets forwarded, discarded, or piped
+to an external program. If no .pycmailrc is found, or processing of the
+.pycmailrc falls off the end, pycmail will store the mail in the default
+system mailbox. 
+
+Requirements: pycmail can deliver mails either to maildir
+(http://cr.yp.to/proto/maildir.html), or ordinary BSD mailboxes. For
+maildirs, no other programs are required (apart from mail user agent
+capable of working with maildirs, such as mutt). For safe locking of
+BSD-style mailboxes pycmail uses lockfile(1) from the procmail package. You
+should install procmail first.
+
+For performance reason, the message is _not_ read whole into the memory
+(unlike procmail), rather it is read in chunks, and the chunks are
+immediately delivered. That means you have access only to the first
+chunk in .pycmailrc. You can modify the size of the  chunks, and the
+size of message body read after headers in /etc/pycmailrc. Default of
+1000 bytes is fine, longer messages are usually junk anyway, and you can
+find out if they are junk out of their beginning, there is no need to
+suck 10 MB mp3 file in the memory before processing.
+
+This has a small disadvantage: if you are delivering mail to multiple
+destinations, and one of them blocks (say, you are delivering to a
+mailbox over nfs and the network goes down), all the other destinations
+are blocked until the blocked chunk is completed (or timeouts).
+
+Currently pycmail recognizes these command line switches:
+-d debuglevel
+-t
+-c conffile
+    the name of alterantive user configuration file
+    (instead of ~/.pycmailrc)
+
+Any other argument is taken as the file name to read mail from, instead
+of standard input. You can specify more files, each of them has to contain 
+one message.
+(TODO: make these files mailboxes and loop over messages)
+
+Default debuglevel is 0, which means pycmail tries to deliver mail in an
+almost foolproof way: if there is any error in ~/.pycmailrc file, mail will
+be delivered to the default mailbox (such as /var/spool/mail/USERNAME). But
+you will have hard time finding out where exactly is the error, if it does
+not deliver mail where you want.
+
+If the debuglevel is 1, any error in ~/.pycmailrc file will be printed,
+resulting in bounced mail (but pycmail will still try to deliver the mail
+to default mailbox).
+
+The bigger the debuglevel, the more detailed information is printed.
+
+Levels equal or higher than 2 are not suitable for actual usage, because
+they generate a lot of output, which results in bounced mails. You can
+use it if you do e.g. postprocessing of messages, or testing your
+configuration.
+
+You can log delivery of messages by specifying logging file by 
+including logfile = open("/path/to/logfile.log","a") at the 
+beginning of your ~/.pycmailrc
+
+If the -t option is used, pycmail will just print what would it do with
+the mail, the mail will be then discarded and no actual delivery will be
+done. Use this for testing purposes.
+
+
+To test your configuration, do something like this: 
+formail -s pycmail -d 2 -t < your_test_mailbox_file  
+
+ 

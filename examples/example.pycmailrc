@@ -1,0 +1,33 @@
+md = USERHOME+"/Mail/"
+
+
+# advanced usage: spawn xtell, and write there the name or address of the sender,
+# and subject.
+a=os.popen("xtell "+USERNAME+" >/dev/null 2>&1", "w")
+a.write("Mail from "+(ADDR_FROM[0] or ADDR_FROM[1])+":"+SUBJECT+"\n")
+a.close()
+
+
+# well-known spammer
+if Contains(FROM, "spammer@yahoo.com"):
+    Junk()
+    Stop()
+
+# sort mailing list: bablo@view.net.au is the address, it can be either recipient
+# or in Cc:
+if "bablo@view.net.au" in ADDRLIST_TO+ADDRLIST_CC:
+    Set(MailBox(md+"bablo"))
+    Stop()
+
+# better handled mailing list, it has header X-Mailing-list
+# we write it to the mailbox and forward to a friend who was too lazy to subscribe by himself
+# (this is better for the network, too...)
+if InHeader("X-Mailing-list", "debian-devel"):
+    Set(MailBox(md+"debian-devel"),
+        Forward("krivanek@dmpc.dbp.fmph.uniba.sk"))
+    # this would be equivalent to:
+    #Set(MailBox(md+"debian-devel"))
+    #Append(Forward("krivanek@dmpc.dbp.fmph.uniba.sk"))
+    Stop()
+
+

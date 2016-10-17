@@ -1,0 +1,14 @@
+#######
+# Override the system default set in /etc/pycmailrc
+default = MailDir("~/Maildir/")
+
+# After we specified our default, we need to activate it
+# documentation is not very clear about this
+SetDefault()
+
+# Sort mailing list to its own maildir using the List-Id: header
+if InHeader("List-Id", "debian-user"):
+    Set(MailDir("~/Maildir/.Debian-User/"))
+    Stop()
+
+#######

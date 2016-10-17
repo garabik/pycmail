@@ -1,0 +1,75 @@
+.TH pycmail 1 "2006-10-17" 
+.SH NAME
+pycmail \- mail sorter
+.SH SYNOPSIS
+.B pycmail
+.I "[-d debuglevel] [-t] [-c conffile] [file1 file2 file3 ...]"
+.SH "DESCRIPTION"
+.B pycmail
+is a mail sorter similar to procmail, written in python, using python
+syntax for mail delivery.
+.SH OPTIONS
+
+.TP
+.B file1
+.B file2
+.B ...
+read mails from file1 file2 ... instead of from stdin (useful for mail postprocessing)
+.TP
+.B  \-d level, --debuglevel level
+set debuglevel to level.
+.TP
+.B  \-t
+testing mode. No mail delivery will be done. Use in conjuction with
+.B \-d
+.TP
+.B  \-c conffile, --config=conffile
+use file 
+.B
+conffile
+as a user configuration file (instead of
+.B
+~/.pycmailrc
+)
+.TP
+.B  \-D define
+add 
+.B
+define
+to the DEFINES list (this can be tested later in the .pycmailrc to modify the behaviour).
+Can be repeated several times to add more strings.
+.SH USAGE
+.B pycmail
+should be invoked automatically from the 
+.I .forward
+file when mail arrives. 
+
+Default debuglevel is 0, which means pycmail tries to deliver mail in almost foolproof 
+way:
+if there is any error in 
+.I ~/.pycmailrc
+file, mail will be delivered to the 
+default mailbox (such as 
+.I /var/spool/mail/USERNAME
+).
+
+If the debuglevel is 1, any error in 
+.I ~/.pycmailrc
+file will be printed, resulting in bounced mail (but pycmail will still 
+try to deliver the mail to default mailbox).
+
+Higher debuglevels will print more information about the actual mail
+processing. The bigger the debuglevel, the more detailed information is
+printed.
+
+To test your configuration, do something like this:
+.nf
+formail -s pycmail -d 2 -t < your_test_mailbox_file
+.fi
+
+.SH "SEE ALSO"
+.BR procmail "(1),
+.BR lockfile "(1),
+.BR formail "(1)
+.SH AUTHOR
+Radovan Garab\('ik <garabik @ kassiopeia.juls.savba.sk>

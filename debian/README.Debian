@@ -1,0 +1,10 @@
+pycmail for Debian
+----------------------
+
+Packaged as native package.
+
+To use pycmail, put this into your ~/.forward file:
+|/usr/bin/pycmail
+
+
+ -- Radovan Garabík <garabik@kassiopeia.juls.savba.sk>

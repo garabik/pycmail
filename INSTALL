@@ -1,0 +1,26 @@
+You need working python, reasonably recent version (such as 2.3).
+If you use ordinary mailboxes (not maildirs), you need lockfile program,
+which is part of procmail package. lockfile should be installed with
+appropriate priviledges to be able to lock your mailbox - check out
+procmail's documentation.
+
+Copy pycmail executable somewhere (such as /usr/local/bin) and modify
+the first line of it to point to your python interpreter.
+
+Copy (and modify) pycmailrc to /etc. Pay special attention to location of
+sendmail and lockfile.
+
+Put this into your ~/.forward:
+|/usr/local/bin/pycmail
+
+Some mailers need quotes:
+"|/usr/local/bin/pycmail"
+
+Qmail does this differently (see qmail's documentation).
+
+Edit your ~/.pycmailrc file. Look at examples/ directory for some examples.
+
+ ----------------------------------------------------------------
+| Always test your configuration, after you making modifications |
+| to the configuration files                                     |
+ ----------------------------------------------------------------

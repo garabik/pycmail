@@ -1,0 +1,125 @@
+md = USERHOME+"/Mail/"
+
+
+def tell():
+    "announce just arrived mail if I am logged in"
+    # of course, xtell is installed on the computer
+    a=os.popen("xtell "+USERNAME+" >/dev/null 2>&1", "w")
+    a.write("Mail from %s\n" % (ADDR_FROM[0] or ADDR_FROM[1]))
+    a.write("Subject: %s\n" % SUBJECT)
+    a.close()
+
+
+
+if "bablo@view.net.au" in ADDRLIST_TO+ADDRLIST_CC:
+    Set(MailBox(md+"bablo"))
+    Stop()
+
+
+if InHeader("X-Mailing-list", "debian"):
+    listaddr = mailmsg.getaddr("X-Mailing-list")[1]
+    sublist = string.split(listaddr, '@')[0]
+    Set(
+        Forward("krivanek@dmpc.dbp.fmph.uniba.sk"),
+        MailBox(md+sublist)
+        )
+    Stop()
+
+
+if InHeader("X-list", "freeciv-dev"):
+    Set(MailBox(md+"freeciv-dev"))
+    Stop()
+
+if InHeader("X-list", "freeciv"):
+    Set(MailBox(md+"freeciv"))
+    Stop()
+
+if InHeader("Sender", "owner-atlas"):
+    Set(MailBox(md+"atlas"))
+    Stop()
+
+if Contains(FROM, "freshmeat daemon"):
+    Append(Forward("andel@dmpc.dbp.fmph.uniba.sk"))
+    Stop()
+
+if ADDR_FROM[1] == "kjf@center.fmph.uniba.sk":
+    Set(MailBox(md+"kjf"))
+    tell()
+    Stop()
+
+
+# simple spam test
+
+if not ( Contains(SUBJECT, "this is not a spam") or
+         Contains(SUBJECT, "toto nie je spam") ):
+
+    spamvalue = 0
+    if not (Contains(TO, USERNAME) or Contains(CC, USERNAME)):
+        spamvalue = spamvalue+10
+        Debug("spamfilter: not in To: or Cc:", 4)
+
+    if mailmsg.getheader('To') == None:
+        spamvalue = spamvalue+5
+        Debug("spamfilter: empty To:", 4)
+    
+    for spamword in ["FREE", "BUSINESS", "WIN", "RICH", "MONEY", "EARN"]:
+        s = len(re.findall("(?i)\\b"+spamword+"\\b", BODY))
+        spamvalue = spamvalue+3*s
+        Debug("spamfilter: spamword %s, %i" % (spamword, s), 4)
+        s = len(re.findall("\\b"+spamword+"\\b", BODY))
+        # 6 additional points if the word is in CAPITAL LETTERS
+        spamvalue = spamvalue+6*s
+        Debug("spamfilter: SPAMWORD %s, %i" % (spamword, s), 4)
+
+    if Contains(BODY, "1-800"):
+        spamvalue = spamvalue+10
+        Debug("spamfilter: 1-800 in body", 4)
+
+
+    if Contains(SUBJECT, "\\bADV?:", rex=1):
+        spamvalue = spamvalue+15
+        Debug("spamfilter: ADV in Subject:", 4)
+
+    
+    Debug("got spamvalue "+`spamvalue`, 2)
+
+    if spamvalue >= 15:
+        # note that we fake our username, so that spammer will
+        # not get confirmation that this address is really valid
+        Reply(From=USERNAME+".nospam",
+              subject="Possible spam (Re: %s)" % SUBJECT,
+              text=
+"""
+Hi
+I am sorry, but you have just hit my anti-spam filter. Your mail was
+classified as spam, with spam value %i, while 14 is a limit for non-spam
+mails.
+
+This means your mail was moved to a very infrequently read mailbox.
+If it is really was no spam, send me a mail again (do not reply to this
+mail, use the original address), and place words "this is not a spam"
+somewhere in the Subject: line.
+Thank you and sorry for the inconvenience.
+
+Je mi luto, ale vas mail bol zachyteny mojim anti-spamovym filtrom.
+Spamovitost vasho mailu bola ohodnotena hodnotou %i, zatial co horna 
+hranica pre legitimne maily je 14.
+Znamena to ze vas mail bol bez precitania presunuty do velmi zriedkavo
+citaneho mailboxu.
+Ak to naozaj nebol spam, poslite mi mail opat (neodpovedajte na tento
+mail, pouzite originalnu adresu), a umiestnite slova "toto nie je spam"
+niekde do Subjectu.
+
+Dakujem a prepacte pripadne tazkosti ktore vam moj filter sposobil.
+
+                                     ZiGi
+
+""" % (spamvalue, spamvalue)
+              )
+
+        Set(MailBox(md+"spam"))
+        Stop()
+
+tell()
+
+  

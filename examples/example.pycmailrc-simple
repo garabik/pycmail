@@ -1,0 +1,27 @@
+# directory where your mailboxes are stored
+md = USERHOME+"/Mail/"
+
+
+# junk everything from well-known spammer, and everything that has $$$ in Subject:
+if ADDR_FROM[1] == "spammer@yahoo.com" or Contains(SUBJECT, "$$$"):
+    Junk()
+    Stop()
+
+# if body of the mail contains words "business opportunity", send it to 
+# a special mailbox - it is probably spam, but what if it is not - we might
+# want to look at it later
+if Contains(BODY, "business opportunity"):
+    Set(MailBox(md+"possible-spam"))
+    Stop()
+
+
+# mail from former girlfriend - forward it to her current boyfriend,
+# but keep a copy just in case :-)
+# ADDR_FROM[0] is name, ADDR_FROM[1] e-mail address
+if ADDR_FROM[0] == "Pamela Anderson":
+    Set(    Forward("tommy.lee@hollywood.com"),
+            MailBox(md+"pamela")
+        )
+    Stop()
+
+

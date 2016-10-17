@@ -1,0 +1,430 @@
+#! /usr/bin/python
+
+# Written by Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>.
+# For new versions, look at http://kassiopeia.juls.savba..sk/~garabik/software/pycmail.html
+
+import sys, os, os.path, pwd, string, StringIO, re, time, traceback, datetime
+import pprint, getopt
+import rfc822, socket
+
+def dotlock(file, sleeptime=8, retries=-1, locktimeout=None, suspend=16):
+    args = "-%i -r %i -s %i" % (sleeptime, retries, suspend)
+    if locktimeout:
+        args = args + " -l %i" % locktimeout
+    os.system(lockfilebin+" "+args+" "+file+".lock")
+
+def dotunlock(file):
+    os.unlink(file+".lock")
+
+def dotlocked(file):
+    return os.path.isfile(file+".lock")
+
+
+
+class MailDestiny:
+
+    def __init__(self, destinyname="", returnPath=""):
+        self.destinyname = destinyname
+        self.returnPath  = returnPath
+
+    def name(self):
+        return "generic mail destiny"
+
+
+class DevNull(MailDestiny):
+    "send mail to /dev/null"
+
+    def __init__(self):
+        pass
+
+    def getfd(self):
+        self.fd = open("/dev/null", "a")
+        return self.fd
+
+    def closefd(self):
+        self.fd.close()
+
+    def name(self):
+        return "/dev/null"
+
+
+class Pipe(MailDestiny):
+    "send mail to another program - headers included"
+
+    def getfd(self):
+        self.fd = os.popen(self.destinyname, "w")
+        return self.fd
+
+    def closefd(self):
+        self.fd.close()
+
+    def name(self):
+        return "Pipe to "+self.destinyname
+
+
+class Forward(MailDestiny):
+    "forward mail to another address"
+
+    def getfd(self):
+        if self.returnPath:
+            self.returnPath = " -f " + self.returnPath
+        Debug("Destiny: %s, ReturnPath: %s" % (self.destinyname, self.returnPath))
+        cmdLine = sendmailbin+self.returnPath+" -i "+self.destinyname
+        Debug("Command Line: "+cmdLine)
+        self.fd = os.popen(cmdLine, "w")
+        return self.fd
+
+    def closefd(self):
+        self.fd.close()
+
+    def name(self):
+        return "Forward to "+self.destinyname
+
+
+class MailDir(MailDestiny):
+    "deliver mail to a maildir directory"
+
+    def filename(self):
+        return `long(time.time())`[:-1]+"."+`os.getpid()`+"."+socket.gethostname()
+
+    def getfd(self):
+        self.fname = self.filename()
+        timer = 0
+        while os.path.isfile(self.destinyname+"/tmp"+self.fname):
+            time.sleep(2)
+            timer = timer + 1
+            if timer > 43200: # 24h
+                # this should not happen
+                Bounce("Unable to deliver.")
+                return None
+        try:
+            os.makedirs(self.destinyname+"/tmp", 0700)
+            os.makedirs(self.destinyname+"/cur", 0700)
+            os.makedirs(self.destinyname+"/new", 0700)
+        except:
+            pass
+        os.umask(077)
+        self.fd=open(self.destinyname+"/tmp/"+self.fname,"a")
+        return self.fd
+
+    def closefd(self):
+        self.fd.close()
+        os.link(self.destinyname+"/tmp/"+self.fname, self.destinyname+"/new/"+self.fname)
+        os.unlink(self.destinyname+"/tmp/"+self.fname)
+
+    def name(self):
+        return "MailDir "+self.destinyname
+
+
+class MailBox(MailDestiny):
+    "deliver mail to BSD mail folder - needs lockfile (from procmail package) for locking to work!"
+
+    def lock(self):
+        if self.destinyname == defaultbox:
+            os.system(lockfilebin+" -l 600 -ml")
+        else:
+            dotlock(self.destinyname, locktimeout=600)
+
+    def unlock(self):
+        if self.destinyname == defaultbox:
+            os.system(lockfilebin+" -mu")
+        else:
+            dotunlock(self.destinyname)
+
+    def locked(self):
+        return dotlocked(self.destinyname)
+
+    def filename(self):
+        return self.destinyname
+
+    def getfd(self):
+        self.lock()
+        self.fname = self.filename()
+        os.umask(077)
+        self.fd=open(self.fname,"a")
+        return self.fd
+
+    def closefd(self):
+        self.fd.close()
+        self.unlock()
+
+    def name(self):
+        return "MailBox "+self.destinyname
+
+
+
+
+def Debug(text="Debugging...", level=2):
+    "print text if debuglevel >= level"
+    if DEBUGLEVEL >=level:
+        print 'DEBUG:', text
+        Log("DEBUG:"+text)
+
+def Log(text):
+    if logfile: 
+        date = datetime.datetime.now().strftime("%Y/%m/%d - %H:%M:%S")
+        logfile.write("%s: %s\n" % (date, text))
+
+def Append(*dest):
+    "add to the mail destination"
+    global DESTINATION
+    for i in dest:
+        DESTINATION.append(i)
+
+def Set(*dest):
+    "set the mail destination"
+    global DESTINATION
+    DESTINATION = []
+    for i in dest:
+        DESTINATION.append(i)
+
+def Junk():
+    Set(DevNull())
+
+def SetDefault():
+    Set(default)
+
+
+
+def SendMail(recipient, From=None, sender=None, subject=None, text="pycmail test mail"):
+    "send mail"
+    # to do: specify eventual additional headers as parameters
+    if DEBUGLEVEL >= 2:
+        Debug("sending mail to %s, Subject: %s" % (recipient, subject), 2)
+        return
+    if From == None:
+        From = USERNAME
+    if sender == None:
+        sender = USERNAME
+    #sm = os.popen(sendmailbin+" -t", "w")
+    sm = os.popen(sendmailbin+" -t -r "+sender, "w")
+    sm.write("From: %s\n" % From)
+    sm.write("To: %s\n" % recipient)
+    if subject:
+        sm.write("Subject: %s\n" % subject)
+    sm.write("\n")
+    sm.write(text)
+    sm.close()
+
+
+def Reply(recipient=None, From=None, sender=None, subject=None, text="pycmail test reply"):
+    "reply to the current mail"
+    # to do: specify eventual additional headers as parameters
+    if subject == None:
+        subject = "Re: "+SUBJECT
+    if recipient == None:
+        recipient = mailmsg.getaddr('Reply-To:')[1] or ADDR_FROM[1]
+    if recipient <> None:
+        SendMail(recipient, From=From, sender=sender, subject=subject, text=text)
+
+
+def Bounce(text="Mail bounced."):
+    "bounce mail. This only prints the text to stdout, which causes MTA to bounce the message"
+    Debug("Bouncing mail.", 2)
+    print text
+
+
+class PycmailStopException(Exception):
+    "Exception raised and catched to signal end of script execution"
+    pass
+
+def Stop():
+    raise PycmailStopException
+
+
+def Contains(s, sub, case=None, rex=0, flags=None):
+    """return true if sub occurs in s
+    if rex == 1, do it as regular expression, else just substring
+    if searching substrings, default case=0, if regexps, case=1"""
+    if rex:
+        if case == None:
+            case = 1
+        if flags == None:
+            flags = re.M
+        else:
+            flags = flags+re.M
+        if case:
+            f = flags
+        else:
+            f = flags+re.I
+        return re.search(sub, s or "", f)
+    else:    
+        if case == None:
+            case = 0
+        if not s:
+            return False
+        if case:
+            return sub in s
+        return sub.lower() in s.lower()
+
+def InHeader(hname, sub, case=None, rex=0, flags=None):
+    "return true if sub is in header with name hname"
+    return Contains(mailmsg.getheader(hname), sub, case, rex, flags)
+
+def untuple(list):
+    "change list of tuples into tuple of lists"
+    return map(lambda x: x[0], list), map(lambda x: x[1], list)
+
+
+
+# start of program is here
+
+USERNAME = pwd.getpwuid(os.getuid())[0]
+USERHOME = pwd.getpwuid(os.getuid())[5]
+
+#LOGFILENAME = USERHOME + "/.pycmail-log"
+LOGFILENAME = None # This is to disable logging
+
+DEBUGLEVEL = 0
+TESTING = 0
+
+try:
+    optlist, args = getopt.getopt(sys.argv[1:], "td:c:D:", 
+                        ["debuglevel=", "config="])
+except:
+    optlist, args = [], []
+
+if not args:
+    args = [sys.stdin]
+
+user_pycmailrc = USERHOME+"/.pycmailrc"
+DEFINES=[]
+
+for i in optlist:
+    if i[0] in ['-d', '--debuglevel']:
+        DEBUGLEVEL = string.atoi(i[1])
+    if i[0] in ['-t', '--test']:
+        TESTING = 1
+    if i[0] in ['-c', '--config']:
+        user_pycmailrc = os.path.expanduser(i[1])
+    if i[0] == "-D":
+    	DEFINES.append(i[1])
+
+
+defaultbox = "/var/spool/mail/"+USERNAME
+default = MailBox(defaultbox)
+bufsize = 4096
+bodysize = 1000
+
+sendmailbin = "/usr/sbin/sendmail"
+lockfilebin = "/usr/bin/lockfile"
+
+if LOGFILENAME:
+    logfile = open(LOGFILENAME,"a")
+else:
+    logfile = None
+
+SetDefault()  # we need to set it here and below too, just in case there
+              # is an error in /etc/pycmailrc
+
+
+if os.path.isfile("/etc/pycmailrc"):
+    execfile("/etc/pycmailrc")
+    
+SetDefault()
+
+for infile in args:
+    try:
+        if infile <> sys.stdin:
+            infileds = open(infile)
+        else:
+            infileds = infile
+        msg = ""
+
+        while 1:
+            l = infileds.readline()
+            msg = msg+l
+            if l == '\n' or l == "":
+                message_read = 0
+                if l == "":
+                    # message contains only headers - a bit patological case,
+                    # but we handle it anyway
+                    BODY = ""
+                    msg = msg + '\n'  # so that we do not corrupt next message
+                    message_read = 1
+                break
+                    
+        if not message_read:
+            to_read = bufsize*(1+(len(msg)+bodysize)/bufsize)-len(msg)
+            BODY = infileds.read(to_read)
+            msg = msg + BODY
+    
+        msgIO = StringIO.StringIO(msg)
+        mailmsg = rfc822.Message(msgIO)
+        FROM = mailmsg.getheader('From') or ""
+        TO = mailmsg.getheader('To') or ""
+        CC = mailmsg.getheader('Cc') or ""
+        SUBJECT = mailmsg.getheader('Subject') or ""
+        ADDR_FROM = mailmsg.getaddr('From')
+        ADDR_TO = mailmsg.getaddr('To')
+        ADDR_CC = mailmsg.getaddr('Cc')
+        NAMELIST_TO, ADDRLIST_TO = untuple(mailmsg.getaddrlist('To'))
+        NAMELIST_CC, ADDRLIST_CC = untuple(mailmsg.getaddrlist('Cc'))
+        msgIO.close()
+    
+        Debug("From: %s\nTo %s\nCC: %s\nSubject: %s" % (FROM, TO, CC, SUBJECT), 4)
+        Debug("Message headers:\n"+pprint.pformat(mailmsg.headers), 6)
+        Debug("Message body:\n"+BODY, 8)
+
+
+        if os.path.isfile(user_pycmailrc):
+            try:
+                execfile(user_pycmailrc)
+            except PycmailStopException:  # used to simulate a goto command
+                pass 
+            except:           # there is some error in .pycmailrc....
+                SetDefault()  # delivery to system default mailbox
+                if DEBUGLEVEL == 0:
+                    pass
+                elif DEBUGLEVEL >= 1:
+                    traceback.print_exc()
+    
+        Log("Message from: %s / To: %s / Subject: %s" % (FROM, TO, SUBJECT))
+
+        # I wonder if this is needed - user could have set DESTINATION to 
+        # an empty list deliberately, as a faster variant to DevNull(),
+        # but OTOH, he might have screwed it up.
+        # for the time being, we assume he screwed it up and and fall back to 
+        # default
+        if DESTINATION == []:
+            SetDefault()
+    
+        destfd = []
+        for i in DESTINATION:
+            Log("Destination: %s" % (i.name()))
+            Debug("destination: "+i.name(), 2)
+            if not TESTING:
+                fd = i.getfd()
+                if fd:
+                    Debug("writing headers+beginning of body", 4)
+                    fd.write(msg)
+                    destfd.append(fd)
+    
+    
+        if not message_read:
+            while 1:
+                msg = infileds.read(bufsize)
+                if msg == "":
+                    break
+                Debug("writing next chunk", 4)
+                Debug("next chunk of body: \n%s\n" % msg, 10)
+                if not TESTING:
+                    for i in destfd:
+                        i.write(msg)
+    
+    finally:
+        infileds.close()
+        for i in DESTINATION:
+            try:
+                if not TESTING:
+                    i.closefd()
+            except:
+                if DEBUGLEVEL == 0:
+                    pass
+                elif DEBUGLEVEL >= 1:
+                    traceback.print_exc()
+
+Debug("end of run", 4)
+if logfile:
+    Log("--------")
+    logfile.close()
