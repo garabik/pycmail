@@ -23,7 +23,7 @@ if condition2:
 Set sets the mail destination. You can use Append instead Set, in this case the
 destination is appended to already existing one.
 
-notice the identation - it is important, and it separates body of the if
+notice the indentation - it is important, and it separates body of the if
 condition (so there are no curly brackets or anything else).
 All variables and keywords are case sensitive.
 
@@ -173,5 +173,5 @@ Debug(text, level=2):
 if debuglevel is equal or greater than level, print text.
 Usually, when receiving mail, this means the mail will bounce with 
 error described by text.
-exmaple:
+example:
 Debug("I am inside a complicated if-then structure", 2)

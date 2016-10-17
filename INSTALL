@@ -1,7 +1,7 @@
 You need working python, reasonably recent version (such as 2.3).
 If you use ordinary mailboxes (not maildirs), you need lockfile program,
 which is part of procmail package. lockfile should be installed with
-appropriate priviledges to be able to lock your mailbox - check out
+appropriate privileges to be able to lock your mailbox - check out
 procmail's documentation.
 
 Copy pycmail executable somewhere (such as /usr/local/bin) and modify

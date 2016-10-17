@@ -46,7 +46,7 @@ Following functions are predefined, you can use them in .pycmailrc file
 
 def Contains(sub, s, case=1, rex=0, flags=None): return true if string 
 s is in string sub
-if rex=1, do regular expression maching, else just look for substring.
+if rex=1, do regular expression matching, else just look for substring.
 if case=0, be case insensitive, else be case sensitive (default 0 for 
 substrings, 1 for regular expressions)
 flags are flags for regular expression.
