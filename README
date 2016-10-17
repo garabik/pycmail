@@ -1,6 +1,12 @@
 Written by Radovan Garabík <garabik @ kassiopeia.juls.savba.sk>
 For new versions, look at http://kassiopeia.juls.savba.sk/~garabik/software/pycmail.html
 
+Note: this software is old, it originated in the days when python
+and maildir  were a cool novelty, RAM was scarce, things were simpler,
+python did not have modules dealing with mail and MIME was frowned upon.
+While the program works quite well, I would implement it very differently
+nowadays.
+
 
 WARNING: this program fiddles with your mail. You can lose your mail.
          Locking of mailboxes has been notoriously known for not being 
