@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 # Written by Radovan Garabik <garabik@melkor.dnp.fmph.uniba.sk>.
-# For new versions, look at http://kassiopeia.juls.savba..sk/~garabik/software/pycmail.html
+# For new versions, look at http://kassiopeia.juls.savba.sk/~garabik/software/pycmail.html
 
 import sys, os, os.path, pwd, string, StringIO, re, time, traceback, datetime
 import pprint, getopt
